@@ -1,0 +1,2 @@
+C:/Users/USER/StudioProjects/onpoint/android/app/.cxx/Debug/713h3p6n/x86/CMakeFiles/edit_cache.dir
+C:/Users/USER/StudioProjects/onpoint/android/app/.cxx/Debug/713h3p6n/x86/CMakeFiles/rebuild_cache.dir
