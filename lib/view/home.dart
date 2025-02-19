@@ -8,7 +8,7 @@ import '../news_model.dart';
 import 'Widgets/NewsContainer.dart';
 import 'Widgets/news_webview.dart';
 import '/shorts_page.dart'; // For reels mode
-import 'Widgets/read_mode.dart';   // For read mode
+import 'Widgets/read_mode.dart'; // For read mode
 import 'package:flutter/services.dart'; // For haptic feedback
 
 const String sampleReelVideoUrl =
@@ -29,7 +29,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Controller for vertical scrolling (articles mode).
   final PageController _verticalController = PageController();
-
   // Controller for horizontal swiping between bookmarks and news feed.
   final PageController _horizontalController = PageController(initialPage: 1);
 
@@ -41,7 +40,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> fetchNews() async {
     try {
-      // Append language query parameter to your API endpoint.
       final url = Uri.parse('http://192.168.1.14:5000/news');
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -148,7 +146,8 @@ class _BookmarksPageState extends State<BookmarksPage> {
       return widget.bookmarkedNews;
     } else {
       return widget.bookmarkedNews
-          .where((news) => news.head.toLowerCase().contains(_searchQuery.toLowerCase()))
+          .where((news) =>
+          news.head.toLowerCase().contains(_searchQuery.toLowerCase()))
           .toList();
     }
   }
@@ -168,7 +167,8 @@ class _BookmarksPageState extends State<BookmarksPage> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(CupertinoIcons.forward, color: Colors.black87),
+            icon:
+            const Icon(CupertinoIcons.forward, color: Colors.black87),
             onPressed: widget.onBack,
           ),
         ],
@@ -178,7 +178,8 @@ class _BookmarksPageState extends State<BookmarksPage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: TextField(
               controller: _searchController,
               onChanged: (value) {
@@ -188,10 +189,12 @@ class _BookmarksPageState extends State<BookmarksPage> {
               },
               decoration: InputDecoration(
                 hintText: 'Search',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                prefixIcon:
+                const Icon(Icons.search, color: Colors.grey),
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                contentPadding:
+                const EdgeInsets.symmetric(vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -211,7 +214,8 @@ class _BookmarksPageState extends State<BookmarksPage> {
               ),
             )
                 : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 8),
               itemCount: filteredBookmarks.length,
               itemBuilder: (context, index) {
                 final news = filteredBookmarks[index];
@@ -229,16 +233,22 @@ class _BookmarksPageState extends State<BookmarksPage> {
                         Navigator.push(
                           context,
                           PageRouteBuilder(
-                            transitionDuration: const Duration(milliseconds: 300),
-                            pageBuilder: (context, animation, secondaryAnimation) =>
+                            transitionDuration:
+                            const Duration(milliseconds: 300),
+                            pageBuilder: (context, animation,
+                                secondaryAnimation) =>
                                 NewsWebView(url: news.newsUrl),
-                            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                            transitionsBuilder: (context, animation,
+                                secondaryAnimation, child) {
                               const begin = Offset(1.0, 0.0);
                               const end = Offset.zero;
-                              final tween = Tween(begin: begin, end: end)
-                                  .chain(CurveTween(curve: Curves.easeInOut));
+                              final tween = Tween(
+                                  begin: begin, end: end)
+                                  .chain(CurveTween(
+                                  curve: Curves.easeInOut));
                               return SlideTransition(
-                                position: animation.drive(tween),
+                                position:
+                                animation.drive(tween),
                                 child: child,
                               );
                             },
@@ -276,7 +286,8 @@ class _BookmarksPageState extends State<BookmarksPage> {
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.bookmark, color: Colors.blue),
+                              icon: const Icon(Icons.bookmark,
+                                  color: Colors.blue),
                               onPressed: () {
                                 widget.onBookmarkToggle(news);
                               },
@@ -296,6 +307,9 @@ class _BookmarksPageState extends State<BookmarksPage> {
   }
 }
 
+// ------------------------------
+// NewsFeedPage uses NewsStack for the stacked card effect
+// ------------------------------
 class NewsFeedPage extends StatefulWidget {
   final List<NewsModel> newsList;
   final List<NewsModel> bookmarkedNews;
@@ -351,76 +365,153 @@ class _NewsFeedPageState extends State<NewsFeedPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    // Use NewsStack for the stacked card effect.
+    return widget.isReelsMode
+        ? const ShortsPage()
+        : NewsStack(
+      newsList: widget.newsList,
+      bookmarkedNews: widget.bookmarkedNews,
+      onBookmarkToggle: widget.onBookmarkToggle,
+      onReadMode: (index) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ReadModePage(
+              newsList: widget.newsList,
+              initialIndex: index,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ------------------------------
+// NewsStack: A stack of news cards with draggable top card that moves with the swipe.
+// When swiped up, the card is removed; when swiped down, if a previously removed card exists,
+// that card is restored as the background.
+// ------------------------------
+class NewsStack extends StatefulWidget {
+  final List<NewsModel> newsList;
+  final List<NewsModel> bookmarkedNews;
+  final Function(NewsModel) onBookmarkToggle;
+  final Function(int index) onReadMode;
+
+  const NewsStack({
+    Key? key,
+    required this.newsList,
+    required this.bookmarkedNews,
+    required this.onBookmarkToggle,
+    required this.onReadMode,
+  }) : super(key: key);
+
+  @override
+  _NewsStackState createState() => _NewsStackState();
+}
+
+class _NewsStackState extends State<NewsStack> with SingleTickerProviderStateMixin {
+  double _dragOffset = 0.0;
+  final double swipeUpThreshold = -100.0;
+  final double swipeDownThreshold = 100.0;
+  final List<NewsModel> _removedNews = [];
+
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController =
+        AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
+  }
+
+  void _animateBack() {
+    _animation = Tween<double>(begin: _dragOffset, end: 0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    )..addListener(() {
+      setState(() {
+        _dragOffset = _animation.value;
+      });
+    });
+    _animationController.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Determine backgroundNews:
+    // If there is a previously removed card, use the last one; else if a second card exists, use that.
+    NewsModel? backgroundNews;
+    if (_removedNews.isNotEmpty) {
+      backgroundNews = _removedNews.last;
+    } else if (widget.newsList.length > 1) {
+      backgroundNews = widget.newsList[1];
+    }
+
     return Stack(
       children: [
-        widget.isReelsMode
-            ? const ShortsPage()
-            : PageView.builder(
-          key: const PageStorageKey('articles_page'),
-          controller: widget.verticalController,
-          scrollDirection: Axis.vertical,
-          itemCount: widget.newsList.length,
-          itemBuilder: (context, index) {
-            final news = widget.newsList[index];
-            final bool isBookmarked = widget.bookmarkedNews.contains(news);
-            return NewsContainer(
-              imgDesc: news.head,
-              imgUrl: news.image,
-              newsHead: news.head,
-              newsDesc: news.desc,
-              newsUrl: news.newsUrl,
-              isBookmarked: isBookmarked,
-              onBookmarkToggle: () => widget.onBookmarkToggle(news),
-              onReadMode: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ReadModePage(
-                      newsList: widget.newsList,
-                      initialIndex: index,
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        ),
-        Positioned(
-          top: 40,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: ElevatedButton(
-              onPressed: () {
-                HapticFeedback.mediumImpact();
-                _wiggleController?.forward(from: 0.0);
-                widget.onToggleMode();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: widget.isReelsMode ? Colors.white24 : Colors.black54,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                minimumSize: const Size(40, 40),
-              ),
-              child: AnimatedBuilder(
-                animation: _wiggleAnimation ?? AlwaysStoppedAnimation(0.0),
-                builder: (context, child) {
-                  return Transform.rotate(
-                    angle: _wiggleAnimation?.value ?? 0.0,
-                    child: child,
-                  );
-                },
-                child: const Icon(
-                  Icons.videocam,
-                  color: Colors.white,
-                  size: 24,
-                ),
+        if (backgroundNews != null)
+          Positioned.fill(
+            child: NewsContainer(
+              imgDesc: backgroundNews!.head,
+              imgUrl: backgroundNews!.image,
+              newsHead: backgroundNews!.head,
+              newsDesc: backgroundNews!.desc,
+              newsUrl: backgroundNews!.newsUrl,
+              isBookmarked: widget.bookmarkedNews.contains(backgroundNews!),
+              onBookmarkToggle: () => widget.onBookmarkToggle(backgroundNews!),
+              onReadMode: () => widget.onReadMode(1),
+            ),
+          ),
+        if (widget.newsList.isNotEmpty)
+          GestureDetector(
+            onPanUpdate: (details) {
+              setState(() {
+                _dragOffset += details.delta.dy;
+              });
+            },
+            onPanEnd: (details) {
+              if (_dragOffset < swipeUpThreshold) {
+                // Swipe up: remove top card and save to history.
+                setState(() {
+                  _removedNews.add(widget.newsList[0]);
+                  widget.newsList.removeAt(0);
+                  _dragOffset = 0.0;
+                });
+              } else if (_dragOffset > swipeDownThreshold) {
+                // Swipe down: if history exists, restore last removed card.
+                if (_removedNews.isNotEmpty) {
+                  setState(() {
+                    widget.newsList.insert(0, _removedNews.removeLast());
+                    _dragOffset = 0.0;
+                  });
+                } else {
+                  _animateBack();
+                }
+              } else {
+                _animateBack();
+              }
+            },
+            child: Transform.translate(
+              offset: Offset(0, _dragOffset),
+              child: NewsContainer(
+                imgDesc: widget.newsList[0].head,
+                imgUrl: widget.newsList[0].image,
+                newsHead: widget.newsList[0].head,
+                newsDesc: widget.newsList[0].desc,
+                newsUrl: widget.newsList[0].newsUrl,
+                isBookmarked: widget.bookmarkedNews.contains(widget.newsList[0]),
+                onBookmarkToggle: () => widget.onBookmarkToggle(widget.newsList[0]),
+                onReadMode: () => widget.onReadMode(0),
               ),
             ),
           ),
-        ),
       ],
     );
   }
