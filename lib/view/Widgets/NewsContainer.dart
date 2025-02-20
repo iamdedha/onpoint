@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart'; // For CupertinoIcons
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // For WhatsApp icon
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '/view/Widgets/news_webview.dart';
-import 'read_mode.dart'; // Import so we can reference AppSettings
+import 'read_mode.dart'; // Contains AppSettings and read mode
+import 'image_gallery.dart'; // Import the updated image gallery screen
 
 class NewsContainer extends StatefulWidget {
   final String imgUrl;
@@ -39,7 +40,6 @@ class _NewsContainerState extends State<NewsContainer> {
   Offset? _initialPosition;
 
   void _openFullArticle() {
-    // Check if the news URL is empty.
     if (widget.newsUrl.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -54,8 +54,7 @@ class _NewsContainerState extends State<NewsContainer> {
           transitionDuration: const Duration(milliseconds: 300),
           pageBuilder: (_, __, ___) => NewsWebView(url: widget.newsUrl),
           transitionsBuilder: (_, animation, __, child) {
-            final tween =
-            Tween(begin: const Offset(1.0, 0.0), end: Offset.zero)
+            final tween = Tween(begin: const Offset(1.0, 0.0), end: Offset.zero)
                 .chain(CurveTween(curve: Curves.easeInOut));
             return SlideTransition(position: animation.drive(tween), child: child);
           },
@@ -89,9 +88,10 @@ class _NewsContainerState extends State<NewsContainer> {
     return ValueListenableBuilder<bool>(
       valueListenable: AppSettings.globalDarkModeNotifier,
       builder: (context, isDarkMode, child) {
-        // Use Kindle-style colors for dark mode.
-        final backgroundColor = isDarkMode ? const Color(0xFF2C2C2C) : Colors.white;
-        final textColor = isDarkMode ? const Color(0xFFEDE0D4) : Colors.black87;
+        final backgroundColor =
+        isDarkMode ? const Color(0xFF2C2C2C) : Colors.white;
+        final textColor =
+        isDarkMode ? const Color(0xFFEDE0D4) : Colors.black87;
 
         return Listener(
           behavior: HitTestBehavior.translucent,
@@ -104,9 +104,9 @@ class _NewsContainerState extends State<NewsContainer> {
             color: backgroundColor,
             child: Stack(
               children: [
+                // Main content with image and text.
                 Column(
                   children: [
-                    // Top image section.
                     ClipRRect(
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(24),
@@ -137,7 +137,6 @@ class _NewsContainerState extends State<NewsContainer> {
                         ),
                       ),
                     ),
-                    // Scrollable text area.
                     Expanded(
                       child: Transform.translate(
                         offset: const Offset(0, -24),
@@ -181,7 +180,9 @@ class _NewsContainerState extends State<NewsContainer> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    widget.newsDesc.isEmpty ? widget.imgDesc : widget.newsDesc,
+                                    widget.newsDesc.isEmpty
+                                        ? widget.imgDesc
+                                        : widget.newsDesc,
                                     style: TextStyle(
                                       fontSize: 15,
                                       color: textColor,
@@ -282,61 +283,56 @@ class _NewsContainerState extends State<NewsContainer> {
                     ),
                   ),
                 ),
-                // Dark mode toggle at bottom center.
+                // Dark mode toggle (without Hero to avoid conflicts).
                 Positioned(
                   bottom: 40,
                   left: 0,
                   right: 0,
                   child: Center(
-                    child: Hero(
-                      tag: 'darkModeToggle',
-                      child: Material(
-                        color: Colors.transparent,
-                        child: GestureDetector(
-                          onTap: () {
-                            HapticFeedback.mediumImpact();
-                            AppSettings.globalDarkModeNotifier.value = !AppSettings.globalDarkModeNotifier.value;
+                    child: Material(
+                      color: Colors.transparent,
+                      child: GestureDetector(
+                        onTap: () {
+                          HapticFeedback.mediumImpact();
+                          AppSettings.globalDarkModeNotifier.value =
+                          !AppSettings.globalDarkModeNotifier.value;
+                        },
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 500),
+                          transitionBuilder: (child, animation) {
+                            return RotationTransition(
+                              turns: Tween(begin: 0.0, end: 1.0).animate(animation),
+                              child: FadeTransition(opacity: animation, child: child),
+                            );
                           },
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 500),
-                            transitionBuilder: (child, animation) {
-                              return RotationTransition(
-                                turns: Tween(begin: 0.0, end: 1.0).animate(animation),
-                                child: FadeTransition(opacity: animation, child: child),
-                              );
-                            },
-                            layoutBuilder: (currentChild, previousChildren) {
-                              return Stack(
-                                alignment: Alignment.center,
-                                children: <Widget>[
-                                  if (currentChild != null) currentChild,
-                                  ...previousChildren,
-                                ],
-                              );
-                            },
-                            child: isDarkMode
-                                ? SizedBox(
-                              key: const ValueKey('moon'),
-                              width: 34,
-                              height: 34,
-                              child: Center(
-                                child: Icon(
-                                  Icons.bedtime,
-                                  color: Colors.blueGrey,
-                                  size: 32,
-                                ),
+                          layoutBuilder: (currentChild, previousChildren) {
+                            return Stack(
+                              alignment: Alignment.center,
+                              children: <Widget>[currentChild!, ...previousChildren],
+                            );
+                          },
+                          child: isDarkMode
+                              ? SizedBox(
+                            key: const ValueKey('moon'),
+                            width: 34,
+                            height: 34,
+                            child: Center(
+                              child: Icon(
+                                Icons.bedtime,
+                                color: Colors.blueGrey,
+                                size: 32,
                               ),
-                            )
-                                : SizedBox(
-                              key: const ValueKey('sun'),
-                              width: 32,
-                              height: 32,
-                              child: Center(
-                                child: Icon(
-                                  Icons.wb_sunny,
-                                  color: Colors.amber[700],
-                                  size: 32,
-                                ),
+                            ),
+                          )
+                              : SizedBox(
+                            key: const ValueKey('sun'),
+                            width: 32,
+                            height: 32,
+                            child: Center(
+                              child: Icon(
+                                Icons.wb_sunny,
+                                color: Colors.amber,
+                                size: 32,
                               ),
                             ),
                           ),
@@ -358,18 +354,43 @@ class _NewsContainerState extends State<NewsContainer> {
                     ),
                   ),
                 ),
-                // WhatsApp button at bottom left with extra left margin.
+                // WhatsApp button at bottom left.
+                // Navigation uses a FadeTransition to avoid hero conflicts.
                 Positioned(
                   bottom: 40,
-                  left: 30, // increased margin from left
+                  left: 40,
                   child: GestureDetector(
                     onTap: () {
-                      // Placeholder for WhatsApp action.
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          transitionDuration: const Duration(milliseconds: 300),
+                          pageBuilder: (_, __, ___) => ImageGalleryScreen(
+                            imageUrls: [
+                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739789086138_136.webp",
+                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739777276234_68.webp",
+                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739765481462_303.webp",
+                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761899561_190.webp",
+                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761854764_294.webp",
+                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761183324_194.webp",
+                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761182237_422.webp",
+                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761122379_235.webp",
+                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739759658069_123.webp",
+                            ],
+                          ),
+                          transitionsBuilder: (_, animation, __, child) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            );
+                          },
+                        ),
+                      );
                     },
                     child: FaIcon(
                       FontAwesomeIcons.whatsapp,
                       color: isDarkMode ? Colors.blueGrey : Colors.green,
-                      size: 30, // adjust size as desired
+                      size: 30,
                     ),
                   ),
                 ),
