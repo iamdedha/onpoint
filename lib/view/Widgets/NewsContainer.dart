@@ -1,10 +1,10 @@
-// NewsContainer.dart
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart'; // For CupertinoIcons
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // For WhatsApp icon
 import '/view/Widgets/news_webview.dart';
 import 'read_mode.dart'; // Import so we can reference AppSettings
 
@@ -72,7 +72,7 @@ class _NewsContainerState extends State<NewsContainer> {
   void _handlePointerMove(PointerMoveEvent event) {
     if (_initialPosition != null && !_hasTriggeredLeftSwipe) {
       final dx = event.position.dx - _initialPosition!.dx;
-      if (dx < -50) {
+      if (dx < -100) {
         _hasTriggeredLeftSwipe = true;
         _openFullArticle();
       }
@@ -355,6 +355,21 @@ class _NewsContainerState extends State<NewsContainer> {
                       CupertinoIcons.forward,
                       color: isDarkMode ? Colors.white54 : Colors.black54,
                       size: 28,
+                    ),
+                  ),
+                ),
+                // WhatsApp button at bottom left with extra left margin.
+                Positioned(
+                  bottom: 40,
+                  left: 30, // increased margin from left
+                  child: GestureDetector(
+                    onTap: () {
+                      // Placeholder for WhatsApp action.
+                    },
+                    child: FaIcon(
+                      FontAwesomeIcons.whatsapp,
+                      color: isDarkMode ? Colors.blueGrey : Colors.green,
+                      size: 30, // adjust size as desired
                     ),
                   ),
                 ),

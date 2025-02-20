@@ -10,7 +10,6 @@ import 'Widgets/news_webview.dart';
 import '/shorts_page.dart'; // For reels mode
 import 'Widgets/read_mode.dart'; // For read mode
 import 'package:flutter/services.dart'; // For haptic feedback
-
 const String sampleReelVideoUrl =
     "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
@@ -40,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> fetchNews() async {
     try {
-      final url = Uri.parse('http://192.168.1.14:5000/news');
+      final url = Uri.parse('http://192.168.183.15:5000/news');
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final List<dynamic> jsonData = json.decode(response.body);
@@ -167,8 +166,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
         elevation: 0,
         actions: [
           IconButton(
-            icon:
-            const Icon(CupertinoIcons.forward, color: Colors.black87),
+            icon: const Icon(CupertinoIcons.forward, color: Colors.black87),
             onPressed: widget.onBack,
           ),
         ],
@@ -264,7 +262,8 @@ class _BookmarksPageState extends State<BookmarksPage> {
                         child: Row(
                           children: [
                             ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius:
+                              BorderRadius.circular(8),
                               child: Image.network(
                                 news.image,
                                 width: 80,
@@ -365,24 +364,50 @@ class _NewsFeedPageState extends State<NewsFeedPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    // Use NewsStack for the stacked card effect.
-    return widget.isReelsMode
-        ? const ShortsPage()
-        : NewsStack(
-      newsList: widget.newsList,
-      bookmarkedNews: widget.bookmarkedNews,
-      onBookmarkToggle: widget.onBookmarkToggle,
-      onReadMode: (index) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ReadModePage(
-              newsList: widget.newsList,
-              initialIndex: index,
+    return Stack(
+      children: [
+        widget.isReelsMode
+            ? const ShortsPage()
+            : NewsStack(
+          newsList: widget.newsList,
+          bookmarkedNews: widget.bookmarkedNews,
+          onBookmarkToggle: widget.onBookmarkToggle,
+          onReadMode: (index) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ReadModePage(
+                  newsList: widget.newsList,
+                  initialIndex: index,
+                ),
+              ),
+            );
+          },
+        ),
+        // Videocam toggle at the top center
+        Positioned(
+          top: 40,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: GestureDetector(
+              onTap: widget.onToggleMode,
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0x99000000),
+                ),
+                padding: const EdgeInsets.all(8),
+                child: Icon(
+                  Icons.videocam,
+                  size: 24,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }
@@ -410,7 +435,8 @@ class NewsStack extends StatefulWidget {
   _NewsStackState createState() => _NewsStackState();
 }
 
-class _NewsStackState extends State<NewsStack> with SingleTickerProviderStateMixin {
+class _NewsStackState extends State<NewsStack>
+    with SingleTickerProviderStateMixin {
   double _dragOffset = 0.0;
   final double swipeUpThreshold = -100.0;
   final double swipeDownThreshold = 100.0;
@@ -437,6 +463,20 @@ class _NewsStackState extends State<NewsStack> with SingleTickerProviderStateMix
     _animationController.forward(from: 0);
   }
 
+  // Leaving bounce effect logic in place as requested
+  void _animateOffScreen(double targetOffset, VoidCallback onAnimationComplete) {
+    _animation = Tween<double>(begin: _dragOffset, end: targetOffset).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    )..addListener(() {
+      setState(() {
+        _dragOffset = _animation.value;
+      });
+    });
+    _animationController.forward(from: 0).whenComplete(() {
+      onAnimationComplete();
+    });
+  }
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -445,10 +485,9 @@ class _NewsStackState extends State<NewsStack> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    // Determine backgroundNews:
-    // If there is a previously removed card, use the last one; else if a second card exists, use that.
+    // Decide which background news to show.
     NewsModel? backgroundNews;
-    if (_removedNews.isNotEmpty) {
+    if (_dragOffset > 0 && _removedNews.isNotEmpty) {
       backgroundNews = _removedNews.last;
     } else if (widget.newsList.length > 1) {
       backgroundNews = widget.newsList[1];
@@ -459,12 +498,12 @@ class _NewsStackState extends State<NewsStack> with SingleTickerProviderStateMix
         if (backgroundNews != null)
           Positioned.fill(
             child: NewsContainer(
-              imgDesc: backgroundNews!.head,
-              imgUrl: backgroundNews!.image,
-              newsHead: backgroundNews!.head,
-              newsDesc: backgroundNews!.desc,
-              newsUrl: backgroundNews!.newsUrl,
-              isBookmarked: widget.bookmarkedNews.contains(backgroundNews!),
+              imgDesc: backgroundNews.head,
+              imgUrl: backgroundNews.image,
+              newsHead: backgroundNews.head,
+              newsDesc: backgroundNews.desc,
+              newsUrl: backgroundNews.newsUrl,
+              isBookmarked: widget.bookmarkedNews.contains(backgroundNews),
               onBookmarkToggle: () => widget.onBookmarkToggle(backgroundNews!),
               onReadMode: () => widget.onReadMode(1),
             ),
@@ -472,24 +511,30 @@ class _NewsStackState extends State<NewsStack> with SingleTickerProviderStateMix
         if (widget.newsList.isNotEmpty)
           GestureDetector(
             onPanUpdate: (details) {
-              setState(() {
-                _dragOffset += details.delta.dy;
-              });
+              // THIS IS THE ONLY ADDITION: check that vertical displacement dominates
+              if (details.delta.dy.abs() > details.delta.dx.abs()) {
+                setState(() {
+                  _dragOffset += details.delta.dy;
+                });
+              }
             },
             onPanEnd: (details) {
+              final screenHeight = MediaQuery.of(context).size.height;
               if (_dragOffset < swipeUpThreshold) {
-                // Swipe up: remove top card and save to history.
-                setState(() {
-                  _removedNews.add(widget.newsList[0]);
-                  widget.newsList.removeAt(0);
-                  _dragOffset = 0.0;
+                _animateOffScreen(-screenHeight, () {
+                  setState(() {
+                    _removedNews.add(widget.newsList[0]);
+                    widget.newsList.removeAt(0);
+                    _dragOffset = 0.0;
+                  });
                 });
               } else if (_dragOffset > swipeDownThreshold) {
-                // Swipe down: if history exists, restore last removed card.
                 if (_removedNews.isNotEmpty) {
-                  setState(() {
-                    widget.newsList.insert(0, _removedNews.removeLast());
-                    _dragOffset = 0.0;
+                  _animateOffScreen(screenHeight, () {
+                    setState(() {
+                      widget.newsList.insert(0, _removedNews.removeLast());
+                      _dragOffset = 0.0;
+                    });
                   });
                 } else {
                   _animateBack();
@@ -506,8 +551,10 @@ class _NewsStackState extends State<NewsStack> with SingleTickerProviderStateMix
                 newsHead: widget.newsList[0].head,
                 newsDesc: widget.newsList[0].desc,
                 newsUrl: widget.newsList[0].newsUrl,
-                isBookmarked: widget.bookmarkedNews.contains(widget.newsList[0]),
-                onBookmarkToggle: () => widget.onBookmarkToggle(widget.newsList[0]),
+                isBookmarked:
+                widget.bookmarkedNews.contains(widget.newsList[0]),
+                onBookmarkToggle: () =>
+                    widget.onBookmarkToggle(widget.newsList[0]),
                 onReadMode: () => widget.onReadMode(0),
               ),
             ),
