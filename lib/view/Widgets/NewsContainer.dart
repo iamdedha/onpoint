@@ -17,7 +17,10 @@ class NewsContainer extends StatefulWidget {
   final String newsHead;
   final bool isBookmarked;
   final VoidCallback onBookmarkToggle;
-  final VoidCallback? onReadMode; // Callback for entering read mode
+  final VoidCallback? onReadMode;     // Callback for entering read mode
+
+  // NEW: Add a callback for tapping the Explore button
+  final VoidCallback? onExploreTap;   // <--- THIS LINE
 
   const NewsContainer({
     Key? key,
@@ -29,6 +32,7 @@ class NewsContainer extends StatefulWidget {
     required this.isBookmarked,
     required this.onBookmarkToggle,
     this.onReadMode,
+    this.onExploreTap,               // <--- THIS LINE
   }) : super(key: key);
 
   @override
@@ -283,115 +287,119 @@ class _NewsContainerState extends State<NewsContainer> {
                     ),
                   ),
                 ),
-                // Dark mode toggle (without Hero to avoid conflicts).
+                // Bottom icons row: WhatsApp, Explore, Dark Mode Toggle, Forward Arrow.
                 Positioned(
                   bottom: 40,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: GestureDetector(
+                  left: 30,
+                  right: 20,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // WhatsApp Icon.
+                      GestureDetector(
                         onTap: () {
-                          HapticFeedback.mediumImpact();
-                          AppSettings.globalDarkModeNotifier.value =
-                          !AppSettings.globalDarkModeNotifier.value;
-                        },
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 500),
-                          transitionBuilder: (child, animation) {
-                            return RotationTransition(
-                              turns: Tween(begin: 0.0, end: 1.0).animate(animation),
-                              child: FadeTransition(opacity: animation, child: child),
-                            );
-                          },
-                          layoutBuilder: (currentChild, previousChildren) {
-                            return Stack(
-                              alignment: Alignment.center,
-                              children: <Widget>[currentChild!, ...previousChildren],
-                            );
-                          },
-                          child: isDarkMode
-                              ? SizedBox(
-                            key: const ValueKey('moon'),
-                            width: 34,
-                            height: 34,
-                            child: Center(
-                              child: Icon(
-                                Icons.bedtime,
-                                color: Colors.blueGrey,
-                                size: 32,
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              transitionDuration: const Duration(milliseconds: 300),
+                              pageBuilder: (_, __, ___) => ImageGalleryScreen(
+                                imageUrls: [
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739789086138_136.webp",
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739777276234_68.webp",
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739765481462_303.webp",
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761899561_190.webp",
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761854764_294.webp",
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761183324_194.webp",
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761182237_422.webp",
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761122379_235.webp",
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739759658069_123.webp",
+                                ],
                               ),
+                              transitionsBuilder: (_, animation, __, child) {
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                );
+                              },
                             ),
-                          )
-                              : SizedBox(
-                            key: const ValueKey('sun'),
-                            width: 32,
-                            height: 32,
-                            child: Center(
-                              child: Icon(
-                                Icons.wb_sunny,
-                                color: Colors.amber,
-                                size: 32,
+                          );
+                        },
+                        child: FaIcon(
+                          FontAwesomeIcons.whatsapp,
+                          color: isDarkMode ? Colors.blueGrey : Colors.green,
+                          size: 30,
+                        ),
+                      ),
+                      // Explore / Magnifying Glass Icon.
+                      GestureDetector(
+                        onTap: widget.onExploreTap,  // <--- CALLS THE NEW CALLBACK
+                        child: Icon(
+                          Icons.search,
+                          color: isDarkMode ? Colors.blueGrey : Colors.blue,
+                          size: 32,
+                        ),
+                      ),
+                      // Dark Mode Toggle.
+                      Material(
+                        color: Colors.transparent,
+                        child: GestureDetector(
+                          onTap: () {
+                            HapticFeedback.mediumImpact();
+                            AppSettings.globalDarkModeNotifier.value =
+                            !AppSettings.globalDarkModeNotifier.value;
+                          },
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 500),
+                            transitionBuilder: (child, animation) {
+                              return RotationTransition(
+                                turns: Tween(begin: 0.0, end: 1.0).animate(animation),
+                                child: FadeTransition(opacity: animation, child: child),
+                              );
+                            },
+                            layoutBuilder: (currentChild, previousChildren) {
+                              return Stack(
+                                alignment: Alignment.center,
+                                children: <Widget>[currentChild!, ...previousChildren],
+                              );
+                            },
+                            child: isDarkMode
+                                ? SizedBox(
+                              key: const ValueKey('moon'),
+                              width: 34,
+                              height: 34,
+                              child: Center(
+                                child: Icon(
+                                  Icons.bedtime,
+                                  color: Colors.blueGrey,
+                                  size: 32,
+                                ),
+                              ),
+                            )
+                                : SizedBox(
+                              key: const ValueKey('sun'),
+                              width: 32,
+                              height: 32,
+                              child: Center(
+                                child: Icon(
+                                  Icons.wb_sunny,
+                                  color: Colors.amber,
+                                  size: 32,
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                ),
-                // Forward arrow button.
-                Positioned(
-                  bottom: 40,
-                  right: 20,
-                  child: IconButton(
-                    onPressed: _openFullArticle,
-                    icon: Icon(
-                      CupertinoIcons.forward,
-                      color: isDarkMode ? Colors.white54 : Colors.black54,
-                      size: 28,
-                    ),
-                  ),
-                ),
-                // WhatsApp button at bottom left.
-                // Navigation uses a FadeTransition to avoid hero conflicts.
-                Positioned(
-                  bottom: 40,
-                  left: 40,
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        PageRouteBuilder(
-                          transitionDuration: const Duration(milliseconds: 300),
-                          pageBuilder: (_, __, ___) => ImageGalleryScreen(
-                            imageUrls: [
-                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739789086138_136.webp",
-                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739777276234_68.webp",
-                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739765481462_303.webp",
-                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761899561_190.webp",
-                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761854764_294.webp",
-                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761183324_194.webp",
-                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761182237_422.webp",
-                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761122379_235.webp",
-                              "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739759658069_123.webp",
-                            ],
-                          ),
-                          transitionsBuilder: (_, animation, __, child) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: child,
-                            );
-                          },
+                      // Forward Arrow Icon.
+                      IconButton(
+                        onPressed: _openFullArticle,
+                        icon: Icon(
+                          CupertinoIcons.forward,
+                          color: isDarkMode ? Colors.white54 : Colors.black54,
+                          size: 28,
                         ),
-                      );
-                    },
-                    child: FaIcon(
-                      FontAwesomeIcons.whatsapp,
-                      color: isDarkMode ? Colors.blueGrey : Colors.green,
-                      size: 30,
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ],

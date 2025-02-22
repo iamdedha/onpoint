@@ -10,6 +10,8 @@ import 'Widgets/news_webview.dart';
 import '/shorts_page.dart'; // For reels mode
 import 'Widgets/read_mode.dart'; // For read mode
 import 'package:flutter/services.dart'; // For haptic feedback
+import '/view/Widgets/explore_page.dart'; // <--- ADDED THIS IMPORT
+
 const String sampleReelVideoUrl =
     "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
@@ -39,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> fetchNews() async {
     try {
-      final url = Uri.parse('http://192.168.183.15:5000/news');
+      final url = Uri.parse('http://192.168.0.196:5000/news');
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final List<dynamic> jsonData = json.decode(response.body);
@@ -176,8 +178,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
       body: Column(
         children: [
           Padding(
-            padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: TextField(
               controller: _searchController,
               onChanged: (value) {
@@ -187,12 +188,10 @@ class _BookmarksPageState extends State<BookmarksPage> {
               },
               decoration: InputDecoration(
                 hintText: 'Search',
-                prefixIcon:
-                const Icon(Icons.search, color: Colors.grey),
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding:
-                const EdgeInsets.symmetric(vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -240,13 +239,11 @@ class _BookmarksPageState extends State<BookmarksPage> {
                                 secondaryAnimation, child) {
                               const begin = Offset(1.0, 0.0);
                               const end = Offset.zero;
-                              final tween = Tween(
-                                  begin: begin, end: end)
+                              final tween = Tween(begin: begin, end: end)
                                   .chain(CurveTween(
                                   curve: Curves.easeInOut));
                               return SlideTransition(
-                                position:
-                                animation.drive(tween),
+                                position: animation.drive(tween),
                                 child: child,
                               );
                             },
@@ -262,8 +259,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
                         child: Row(
                           children: [
                             ClipRRect(
-                              borderRadius:
-                              BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(8),
                               child: Image.network(
                                 news.image,
                                 width: 80,
@@ -398,7 +394,7 @@ class _NewsFeedPageState extends State<NewsFeedPage>
                   color: const Color(0x99000000),
                 ),
                 padding: const EdgeInsets.all(8),
-                child: Icon(
+                child: const Icon(
                   Icons.videocam,
                   size: 24,
                   color: Colors.white,
@@ -506,6 +502,15 @@ class _NewsStackState extends State<NewsStack>
               isBookmarked: widget.bookmarkedNews.contains(backgroundNews),
               onBookmarkToggle: () => widget.onBookmarkToggle(backgroundNews!),
               onReadMode: () => widget.onReadMode(1),
+              // Minimal addition for the Explore button:
+              onExploreTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ExplorePage(newsList: widget.newsList),
+                  ),
+                );
+              },
             ),
           ),
         if (widget.newsList.isNotEmpty)
@@ -556,6 +561,15 @@ class _NewsStackState extends State<NewsStack>
                 onBookmarkToggle: () =>
                     widget.onBookmarkToggle(widget.newsList[0]),
                 onReadMode: () => widget.onReadMode(0),
+                // Minimal addition for the Explore button:
+                onExploreTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ExplorePage(newsList: widget.newsList),
+                    ),
+                  );
+                },
               ),
             ),
           ),
