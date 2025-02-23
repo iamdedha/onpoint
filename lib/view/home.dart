@@ -41,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> fetchNews() async {
     try {
-      final url = Uri.parse('http://192.168.0.196:5000/news');
+      final url = Uri.parse('http://192.168.183.15:5000/news');
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final List<dynamic> jsonData = json.decode(response.body);

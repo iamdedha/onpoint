@@ -17,10 +17,8 @@ class NewsContainer extends StatefulWidget {
   final String newsHead;
   final bool isBookmarked;
   final VoidCallback onBookmarkToggle;
-  final VoidCallback? onReadMode;     // Callback for entering read mode
-
-  // NEW: Add a callback for tapping the Explore button
-  final VoidCallback? onExploreTap;   // <--- THIS LINE
+  final VoidCallback? onReadMode; // Callback for entering read mode
+  final VoidCallback? onExploreTap; // Callback for tapping the Explore button
 
   const NewsContainer({
     Key? key,
@@ -32,7 +30,7 @@ class NewsContainer extends StatefulWidget {
     required this.isBookmarked,
     required this.onBookmarkToggle,
     this.onReadMode,
-    this.onExploreTap,               // <--- THIS LINE
+    this.onExploreTap,
   }) : super(key: key);
 
   @override
@@ -58,9 +56,14 @@ class _NewsContainerState extends State<NewsContainer> {
           transitionDuration: const Duration(milliseconds: 300),
           pageBuilder: (_, __, ___) => NewsWebView(url: widget.newsUrl),
           transitionsBuilder: (_, animation, __, child) {
-            final tween = Tween(begin: const Offset(1.0, 0.0), end: Offset.zero)
-                .chain(CurveTween(curve: Curves.easeInOut));
-            return SlideTransition(position: animation.drive(tween), child: child);
+            final tween = Tween(
+              begin: const Offset(1.0, 0.0),
+              end: Offset.zero,
+            ).chain(CurveTween(curve: Curves.easeInOut));
+            return SlideTransition(
+              position: animation.drive(tween),
+              child: child,
+            );
           },
         ),
       );
@@ -75,7 +78,7 @@ class _NewsContainerState extends State<NewsContainer> {
   void _handlePointerMove(PointerMoveEvent event) {
     if (_initialPosition != null && !_hasTriggeredLeftSwipe) {
       final dx = event.position.dx - _initialPosition!.dx;
-      if (dx < -100) {
+      if (dx < -180) {
         _hasTriggeredLeftSwipe = true;
         _openFullArticle();
       }
@@ -105,107 +108,118 @@ class _NewsContainerState extends State<NewsContainer> {
           child: Container(
             width: double.infinity,
             height: MediaQuery.of(context).size.height,
-            color: backgroundColor,
+            color: Colors.transparent,
             child: Stack(
               children: [
-                // Main content with image and text.
-                Column(
-                  children: [
-                    ClipRRect(
+                // 1) Top image
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                    child: SizedBox(
+                      height: 325,
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: Image.network(
+                              widget.imgUrl,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Positioned.fill(
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.center,
+                                  colors: [Colors.black45, Colors.transparent],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // 2) Description box pinned from top=280 to bottom
+                // Only the top corners are rounded now.
+                Positioned(
+                  top: 280,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    decoration: BoxDecoration(
+                      color: backgroundColor,
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(24),
                         topRight: Radius.circular(24),
                       ),
-                      child: SizedBox(
-                        height: 350,
-                        child: Stack(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 32, 16, 24),
+                      child: GestureDetector(
+                        onTap: () {
+                          if (widget.newsUrl.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("There is no full news for this article."),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          } else {
+                            widget.onReadMode?.call();
+                          }
+                        },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Positioned.fill(
-                              child: Image.network(
-                                widget.imgUrl,
-                                fit: BoxFit.cover,
+                            Text(
+                              widget.newsHead,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
                               ),
                             ),
-                            Positioned.fill(
-                              child: Container(
-                                decoration: const BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.bottomCenter,
-                                    end: Alignment.center,
-                                    colors: [Colors.black45, Colors.transparent],
-                                  ),
-                                ),
+                            const SizedBox(height: 10),
+                            Text(
+                              widget.newsDesc.isEmpty
+                                  ? widget.imgDesc
+                                  : widget.newsDesc,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: textColor,
+                                height: 1.3,
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                    Expanded(
-                      child: Transform.translate(
-                        offset: const Offset(0, -24),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          decoration: BoxDecoration(
-                            color: backgroundColor,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(24),
-                              topRight: Radius.circular(24),
-                            ),
-                          ),
-                          child: SingleChildScrollView(
-                            physics: const BouncingScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(16, 32, 16, 24),
-                            child: GestureDetector(
-                              onTap: () {
-                                if (widget.newsUrl.trim().isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text("There is no full news for this article."),
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
-                                } else {
-                                  if (widget.onReadMode != null) {
-                                    widget.onReadMode!();
-                                  }
-                                }
-                              },
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    widget.newsHead,
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: textColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    widget.newsDesc.isEmpty
-                                        ? widget.imgDesc
-                                        : widget.newsDesc,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: textColor,
-                                      height: 1.3,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-                // "OnPoint" badge.
+
+                // 3) OnPoint badge
                 Positioned(
-                  top: 310,
-                  left: 16,
+                  top: 265,
+                  left: 26,
                   child: GestureDetector(
                     onTap: () {
                       if (widget.newsUrl.trim().isEmpty) {
@@ -216,19 +230,21 @@ class _NewsContainerState extends State<NewsContainer> {
                           ),
                         );
                       } else {
-                        if (widget.onReadMode != null) {
-                          widget.onReadMode!();
-                        }
+                        widget.onReadMode?.call();
                       }
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: isDarkMode ? Colors.grey[800] : const Color(0xFFF7F7F7),
+                        color: isDarkMode
+                            ? Colors.grey[800]
+                            : const Color(0xFFF7F7F7),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: isDarkMode ? Colors.black.withOpacity(0.5) : Colors.grey.withOpacity(0.3),
+                            color: isDarkMode
+                                ? Colors.black.withOpacity(0.5)
+                                : Colors.grey.withOpacity(0.3),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
@@ -237,7 +253,9 @@ class _NewsContainerState extends State<NewsContainer> {
                       child: Text(
                         "OnPoint",
                         style: TextStyle(
-                          color: isDarkMode ? Colors.white : const Color(0xFF424242),
+                          color: isDarkMode
+                              ? Colors.white
+                              : const Color(0xFF424242),
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -245,7 +263,8 @@ class _NewsContainerState extends State<NewsContainer> {
                     ),
                   ),
                 ),
-                // Bookmark button.
+
+                // 4) Bookmark button (top left)
                 Positioned(
                   top: 40,
                   left: 20,
@@ -258,7 +277,9 @@ class _NewsContainerState extends State<NewsContainer> {
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 200),
                         child: Icon(
-                          widget.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                          widget.isBookmarked
+                              ? Icons.bookmark
+                              : Icons.bookmark_border,
                           key: ValueKey<bool>(widget.isBookmarked),
                           color: Colors.white,
                           size: 24,
@@ -267,7 +288,8 @@ class _NewsContainerState extends State<NewsContainer> {
                     ),
                   ),
                 ),
-                // Share button.
+
+                // 5) Share button (top right)
                 Positioned(
                   top: 40,
                   right: 20,
@@ -287,7 +309,8 @@ class _NewsContainerState extends State<NewsContainer> {
                     ),
                   ),
                 ),
-                // Bottom icons row: WhatsApp, Explore, Dark Mode Toggle, Forward Arrow.
+
+                // 6) Bottom icons row
                 Positioned(
                   bottom: 40,
                   left: 30,
@@ -295,51 +318,7 @@ class _NewsContainerState extends State<NewsContainer> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // WhatsApp Icon.
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            PageRouteBuilder(
-                              transitionDuration: const Duration(milliseconds: 300),
-                              pageBuilder: (_, __, ___) => ImageGalleryScreen(
-                                imageUrls: [
-                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739789086138_136.webp",
-                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739777276234_68.webp",
-                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739765481462_303.webp",
-                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761899561_190.webp",
-                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761854764_294.webp",
-                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761183324_194.webp",
-                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761182237_422.webp",
-                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761122379_235.webp",
-                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739759658069_123.webp",
-                                ],
-                              ),
-                              transitionsBuilder: (_, animation, __, child) {
-                                return FadeTransition(
-                                  opacity: animation,
-                                  child: child,
-                                );
-                              },
-                            ),
-                          );
-                        },
-                        child: FaIcon(
-                          FontAwesomeIcons.whatsapp,
-                          color: isDarkMode ? Colors.blueGrey : Colors.green,
-                          size: 30,
-                        ),
-                      ),
-                      // Explore / Magnifying Glass Icon.
-                      GestureDetector(
-                        onTap: widget.onExploreTap,  // <--- CALLS THE NEW CALLBACK
-                        child: Icon(
-                          Icons.search,
-                          color: isDarkMode ? Colors.blueGrey : Colors.blue,
-                          size: 32,
-                        ),
-                      ),
-                      // Dark Mode Toggle.
+                      // (1) Dark Mode Toggle
                       Material(
                         color: Colors.transparent,
                         child: GestureDetector(
@@ -353,7 +332,10 @@ class _NewsContainerState extends State<NewsContainer> {
                             transitionBuilder: (child, animation) {
                               return RotationTransition(
                                 turns: Tween(begin: 0.0, end: 1.0).animate(animation),
-                                child: FadeTransition(opacity: animation, child: child),
+                                child: FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                ),
                               );
                             },
                             layoutBuilder: (currentChild, previousChildren) {
@@ -390,7 +372,54 @@ class _NewsContainerState extends State<NewsContainer> {
                           ),
                         ),
                       ),
-                      // Forward Arrow Icon.
+
+                      // (2) Explore Icon
+                      GestureDetector(
+                        onTap: widget.onExploreTap,
+                        child: Icon(
+                          Icons.search,
+                          color: isDarkMode ? Colors.blueGrey : Colors.blue,
+                          size: 32,
+                        ),
+                      ),
+
+                      // (3) WhatsApp Icon
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              transitionDuration: const Duration(milliseconds: 300),
+                              pageBuilder: (context, animation, secondaryAnimation) => ImageGalleryScreen(
+                                imageUrls: const [
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739789086138_136.webp",
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739777276234_68.webp",
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739765481462_303.webp",
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761899561_190.webp",
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761854764_294.webp",
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761183324_194.webp",
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761182237_422.webp",
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739761122379_235.webp",
+                                  "https://nis-gs.pix.in/inshorts/images/v1/variants/webp/xs/2025/02_feb/17_mon/img_1739759658069_123.webp",
+                                ],
+                              ),
+                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                );
+                              },
+                            ),
+                          );
+                        },
+                        child: FaIcon(
+                          FontAwesomeIcons.whatsapp,
+                          color: isDarkMode ? Colors.blueGrey : Colors.green,
+                          size: 30,
+                        ),
+                      ),
+
+                      // (4) Forward Arrow
                       IconButton(
                         onPressed: _openFullArticle,
                         icon: Icon(
