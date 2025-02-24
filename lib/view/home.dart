@@ -41,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> fetchNews() async {
     try {
-      final url = Uri.parse('http://192.168.183.15:5000/news');
+      final url = Uri.parse('http://192.168.0.196:5000/news');
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final List<dynamic> jsonData = json.decode(response.body);
@@ -211,8 +211,8 @@ class _BookmarksPageState extends State<BookmarksPage> {
               ),
             )
                 : ListView.builder(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 8),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               itemCount: filteredBookmarks.length,
               itemBuilder: (context, index) {
                 final news = filteredBookmarks[index];
@@ -444,8 +444,9 @@ class _NewsStackState extends State<NewsStack>
   @override
   void initState() {
     super.initState();
+    // Animation duration set to 400ms for smoother transitions.
     _animationController =
-        AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
+        AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
   }
 
   void _animateBack() {
@@ -499,10 +500,9 @@ class _NewsStackState extends State<NewsStack>
               newsHead: backgroundNews.head,
               newsDesc: backgroundNews.desc,
               newsUrl: backgroundNews.newsUrl,
-              isBookmarked: widget.bookmarkedNews.contains(backgroundNews),
+              isBookmarked: widget.bookmarkedNews.contains(backgroundNews!),
               onBookmarkToggle: () => widget.onBookmarkToggle(backgroundNews!),
               onReadMode: () => widget.onReadMode(1),
-              // Minimal addition for the Explore button:
               onExploreTap: () {
                 Navigator.push(
                   context,
@@ -516,7 +516,7 @@ class _NewsStackState extends State<NewsStack>
         if (widget.newsList.isNotEmpty)
           GestureDetector(
             onPanUpdate: (details) {
-              // THIS IS THE ONLY ADDITION: check that vertical displacement dominates
+              // Check that vertical displacement dominates.
               if (details.delta.dy.abs() > details.delta.dx.abs()) {
                 setState(() {
                   _dragOffset += details.delta.dy;
@@ -531,6 +531,11 @@ class _NewsStackState extends State<NewsStack>
                     _removedNews.add(widget.newsList[0]);
                     widget.newsList.removeAt(0);
                     _dragOffset = 0.0;
+                    // When all news have been swiped, wrap-around by repopulating the list.
+                    if (widget.newsList.isEmpty) {
+                      widget.newsList.addAll(_removedNews);
+                      _removedNews.clear();
+                    }
                   });
                 });
               } else if (_dragOffset > swipeDownThreshold) {
@@ -561,7 +566,6 @@ class _NewsStackState extends State<NewsStack>
                 onBookmarkToggle: () =>
                     widget.onBookmarkToggle(widget.newsList[0]),
                 onReadMode: () => widget.onReadMode(0),
-                // Minimal addition for the Explore button:
                 onExploreTap: () {
                   Navigator.push(
                     context,

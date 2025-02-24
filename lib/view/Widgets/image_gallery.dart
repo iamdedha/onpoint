@@ -68,7 +68,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
       // With share_plus 4.0.0 or higher:
       await Share.shareXFiles(
         [XFile(filePath)],
-        text: 'Check out this image!',
+        text: '',
       );
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(

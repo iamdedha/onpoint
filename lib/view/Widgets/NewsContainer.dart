@@ -78,7 +78,7 @@ class _NewsContainerState extends State<NewsContainer> {
   void _handlePointerMove(PointerMoveEvent event) {
     if (_initialPosition != null && !_hasTriggeredLeftSwipe) {
       final dx = event.position.dx - _initialPosition!.dx;
-      if (dx < -180) {
+      if (dx < -170) {
         _hasTriggeredLeftSwipe = true;
         _openFullArticle();
       }
@@ -193,7 +193,7 @@ class _NewsContainerState extends State<NewsContainer> {
                             Text(
                               widget.newsHead,
                               style: TextStyle(
-                                fontSize: 20,
+                                fontSize: 22,
                                 fontWeight: FontWeight.bold,
                                 color: textColor,
                               ),
@@ -204,7 +204,7 @@ class _NewsContainerState extends State<NewsContainer> {
                                   ? widget.imgDesc
                                   : widget.newsDesc,
                               style: TextStyle(
-                                fontSize: 15,
+                                fontSize: 17,
                                 color: textColor,
                                 height: 1.3,
                               ),
