@@ -190,7 +190,7 @@ class _ExplorePageState extends State<ExplorePage> {
   int _currentPage = 0;
   final int _pageSize = 12; // Number of news items per page
 
-  // The reels picked from YouTube API data (or from cache)
+  // The reels picked from YouTube API data (or from global cache)
   List<VideoModel> _reels = [];
 
   // State for pagination
@@ -241,11 +241,16 @@ class _ExplorePageState extends State<ExplorePage> {
       }
     });
 
-    // Load reels (from cache or API) and then load the first page.
-    _fetchReels().then((reels) {
-      setState(() => _reels = reels);
+    // Use the global cache if available; otherwise fetch fresh data.
+    if (YouTubeApiService.cachedShorts != null) {
+      _reels = YouTubeApiService.cachedShorts!;
       _loadNextPage();
-    });
+    } else {
+      _fetchReels().then((reels) {
+        _reels = reels;
+        _loadNextPage();
+      });
+    }
   }
 
   //////////////////////////////////////////////////////
@@ -259,7 +264,7 @@ class _ExplorePageState extends State<ExplorePage> {
   }
 
   //////////////////////////////////////////////////////
-  // fetchReels: Uses caching to avoid unnecessary API calls
+  // _fetchReels: Fetch fresh data from the YouTube API.
   //////////////////////////////////////////////////////
   Future<List<VideoModel>> _fetchReels() async {
     final channelIds = [
@@ -267,41 +272,14 @@ class _ExplorePageState extends State<ExplorePage> {
       'UCx8Z14PpntdaxCt2hakbQLQ',
       'UCD3CdwT8lTCe5ZGHbUBxmWA',
     ];
-
-    final prefs = await SharedPreferences.getInstance();
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final cachedExpiry = prefs.getInt(_kCachedReelsExpiryKey) ?? 0;
-
-    // If cache is valid, return cached reels.
-    if (now < cachedExpiry) {
-      final cachedReelsJson = prefs.getString(_kCachedReelsKey);
-      if (cachedReelsJson != null && cachedReelsJson.isNotEmpty) {
-        try {
-          final List<dynamic> jsonList = jsonDecode(cachedReelsJson);
-          final List<VideoModel> cachedReels = jsonList.map((data) {
-            return VideoModel.fromJson(data as Map<String, dynamic>);
-          }).toList();
-          if (cachedReels.isNotEmpty) {
-            print("Returning reels from cache.");
-            return cachedReels;
-          }
-        } catch (e) {
-          print("Error parsing cached reels: $e");
-        }
-      }
-    }
-
-    // If no valid cache, fetch fresh data from the YouTube API.
     try {
       final apiService = YouTubeApiService(apiKey: 'AIzaSyBUy_tQOz4lQOf0czUBr0l4pZZZmaQA4rI');
       final videoLists = await Future.wait(
         channelIds.map((id) => apiService.fetchShorts(channelId: id)),
       );
       final reels = videoLists.expand((list) => list).toList();
-      // NOTE: Removing shuffle() preserves the API's order.
-      final newExpiry = now + _kReelsCacheDurationMs;
-      await prefs.setString(_kCachedReelsKey, jsonEncode(reels));
-      await prefs.setInt(_kCachedReelsExpiryKey, newExpiry);
+      // Save fresh reels to global cache.
+      YouTubeApiService.cachedShorts = reels;
       return reels;
     } catch (e) {
       print("Error fetching reels: $e");
@@ -326,7 +304,7 @@ class _ExplorePageState extends State<ExplorePage> {
   }
 
   //////////////////////////////////////////////////////
-  // Load next page of news + insert one reel per page
+  // Load next page of news + insert one reel per page.
   //////////////////////////////////////////////////////
   void _loadNextPage() {
     if (_isLoadingPage || _allNewsLoaded) return;
@@ -344,7 +322,7 @@ class _ExplorePageState extends State<ExplorePage> {
     final pageNews = news.sublist(startIndex, endIndex);
     final newItems = pageNews.map((n) => ExploreItem.news(n)).toList();
 
-    // Insert one reel at the end of each page, picked from API data.
+    // Insert one reel at the end of each page, picked from the API data.
     if (_reels.isNotEmpty) {
       final reel = _reels[_currentPage % _reels.length];
       newItems.add(ExploreItem.video(reel));
@@ -434,7 +412,7 @@ class _ExplorePageState extends State<ExplorePage> {
                   );
                 },
                 child: SizedBox(
-                  height: 150,
+                  height: 200,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: Image.network(
@@ -456,7 +434,7 @@ class _ExplorePageState extends State<ExplorePage> {
                   );
                 },
                 child: SizedBox(
-                  height: 150,
+                  height: 250,
                   child: LazyMutedReelTile(video: video),
                 ),
               );

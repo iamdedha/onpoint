@@ -20,7 +20,6 @@ class _ShortsPageState extends State<ShortsPage> {
     'UCt4t-jeY85JegMlZ-E5UWtA',
     'UCx8Z14PpntdaxCt2hakbQLQ',
     'UCD3CdwT8lTCe5ZGHbUBxmWA',
-    // Add more channel IDs as needed.
   ];
 
   late final YouTubeApiService apiService;
@@ -43,17 +42,17 @@ class _ShortsPageState extends State<ShortsPage> {
     // Flatten all videos into one list.
     final List<VideoModel> videos = videoLists.expand((list) => list).toList();
 
+    // Save to the global cache.
+    YouTubeApiService.cachedShorts = videos;
+
     // Map the videos to feed items.
     final videoFeed =
     videos.map((video) => {'type': 'video', 'data': video}).toList();
 
-    // Remove dummy news; feed consists solely of videos.
-    final List<Map<String, dynamic>> combinedFeed = [...videoFeed];
+    // Shuffle the feed to randomize order.
+    videoFeed.shuffle();
 
-    // Shuffle the combined feed to randomize the order.
-    combinedFeed.shuffle();
-
-    return combinedFeed;
+    return videoFeed;
   }
 
   @override
@@ -63,20 +62,16 @@ class _ShortsPageState extends State<ShortsPage> {
   }
 
   /// When the vertical drag ends, check the swipe velocity.
-  /// If it exceeds the threshold, animate to next or previous page.
   void _onVerticalDragEnd(DragEndDetails details, int totalPages) {
-    const swipeThreshold = 100; // Adjust this threshold as needed.
+    const swipeThreshold = 100;
     final double velocity = details.primaryVelocity ?? 0;
     final int currentPage = _pageController.page?.round() ?? 0;
-
     if (velocity < -swipeThreshold && currentPage < totalPages - 1) {
-      // Swipe up: move to next page.
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     } else if (velocity > swipeThreshold && currentPage > 0) {
-      // Swipe down: move to previous page.
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -100,13 +95,12 @@ class _ShortsPageState extends State<ShortsPage> {
           } else {
             final feedItems = snapshot.data!;
             return GestureDetector(
-              // Wrap the PageView in a GestureDetector so that swipe gestures
-              // trigger page animations instead of the built-in physics.
+              // Wrap the PageView in a GestureDetector to handle swipe gestures.
               onVerticalDragEnd: (details) =>
                   _onVerticalDragEnd(details, feedItems.length),
               child: PageView.builder(
                 controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(), // Disable default scroll physics.
+                physics: const NeverScrollableScrollPhysics(),
                 scrollDirection: Axis.vertical,
                 itemCount: feedItems.length,
                 itemBuilder: (context, index) {
@@ -120,12 +114,10 @@ class _ShortsPageState extends State<ShortsPage> {
                       imgUrl: news.image,
                       imgDesc: news.head,
                       newsHead: news.head,
-                      newsDesc: news.desc, // Passing the detailed description.
+                      newsDesc: news.desc,
                       newsUrl: news.newsUrl,
                       isBookmarked: false,
-                      onBookmarkToggle: () {
-                        // Implement your bookmark logic here.
-                      },
+                      onBookmarkToggle: () {},
                     );
                   }
                   return const SizedBox.shrink();

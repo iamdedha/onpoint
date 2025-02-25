@@ -1,4 +1,3 @@
-// reels_container.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -36,7 +35,7 @@ class _ReelsContainerState extends State<ReelsContainer> {
       flags: YoutubePlayerFlags(
         autoPlay: true,
         mute: false,
-        loop: true,
+        loop: false, // Disable built-in looping
         hideControls: true,
       ),
     );
@@ -60,8 +59,13 @@ class _ReelsContainerState extends State<ReelsContainer> {
           });
         }
         if (_controller.value.playerState == PlayerState.ended) {
-          _controller.seekTo(Duration.zero);
-          _controller.play();
+          // Add a short delay before looping to avoid rapid state changes.
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (mounted) {
+              _controller.seekTo(Duration.zero);
+              _controller.play();
+            }
+          });
         }
       }
     });

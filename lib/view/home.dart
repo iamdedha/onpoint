@@ -504,10 +504,11 @@ class _NewsStackState extends State<NewsStack>
               onBookmarkToggle: () => widget.onBookmarkToggle(backgroundNews!),
               onReadMode: () => widget.onReadMode(1),
               onExploreTap: () {
+                final fullNewsList = [..._removedNews, ...widget.newsList];
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ExplorePage(newsList: widget.newsList),
+                    builder: (context) => ExplorePage(newsList: fullNewsList),
                   ),
                 );
               },
@@ -567,10 +568,11 @@ class _NewsStackState extends State<NewsStack>
                     widget.onBookmarkToggle(widget.newsList[0]),
                 onReadMode: () => widget.onReadMode(0),
                 onExploreTap: () {
+                  final fullNewsList = [..._removedNews, ...widget.newsList];
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ExplorePage(newsList: widget.newsList),
+                      builder: (context) => ExplorePage(newsList: fullNewsList),
                     ),
                   );
                 },

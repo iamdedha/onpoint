@@ -347,8 +347,8 @@ class _NewsContainerState extends State<NewsContainer> {
                             child: isDarkMode
                                 ? SizedBox(
                               key: const ValueKey('moon'),
-                              width: 34,
-                              height: 34,
+                              width: 32,
+                              height: 32,
                               child: Center(
                                 child: Icon(
                                   Icons.bedtime,

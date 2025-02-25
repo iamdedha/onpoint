@@ -5,6 +5,8 @@ import 'video_model.dart';
 
 class YouTubeApiService {
   final String apiKey;
+  // Global cache for reels (short videos)
+  static List<VideoModel>? cachedShorts;
 
   YouTubeApiService({required this.apiKey});
 
@@ -18,7 +20,7 @@ class YouTubeApiService {
     final cacheExpiryKey = '${cacheKey}_expiry';
     final now = DateTime.now().millisecondsSinceEpoch;
 
-    // Check if cached data exists and hasn't expired
+    // Check if cached data exists and hasn't expired.
     final expiry = prefs.getInt(cacheExpiryKey);
     if (expiry != null && now < expiry) {
       final cachedData = prefs.getString(cacheKey);
@@ -28,7 +30,7 @@ class YouTubeApiService {
       }
     }
 
-    // Otherwise, fetch fresh data from the API
+    // Otherwise, fetch fresh data from the API.
     final url = Uri.parse(
       'https://www.googleapis.com/youtube/v3/search'
           '?key=$apiKey'
@@ -46,7 +48,7 @@ class YouTubeApiService {
       final data = json.decode(response.body);
       final List<dynamic> items = data['items'];
 
-      // Cache the fetched data for, e.g., one hour (3600000 ms)
+      // Cache the fetched data for 1 hour (3600000 ms)
       prefs.setString(cacheKey, jsonEncode(items));
       prefs.setInt(cacheExpiryKey, now + 3600000);
 
