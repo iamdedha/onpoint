@@ -13,21 +13,17 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   Future<void> _checkLanguagePreference() async {
     final prefs = await SharedPreferences.getInstance();
-
-    // For testing, clear all stored preferences so the onboarding screen always appears.
-    await prefs.clear();
-    print("All preferences cleared for debugging.");
-
-    final lang = prefs.getString('preferred_language');
-
-    if (lang != null && lang.isNotEmpty) {
-      // Navigate to HomeScreen with the selected language.
+    // Check if onboarding has been completed.
+    final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
+    if (onboardingCompleted) {
+      // If onboarding is done, get the language or default to 'en'
+      final lang = prefs.getString('preferred_language') ?? 'en';
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => HomeScreen(language: lang)),
       );
     } else {
-      // If no language is set, navigate to the OnboardingPage.
+      // On first launch, show the onboarding screen.
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const OnboardingPage()),

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart'; // For CupertinoIcons
+import 'package:shared_preferences/shared_preferences.dart';
 import 'video_model.dart';
 import 'news_model.dart';
 import '/youtube_api_service.dart';
 import '/view/Widgets/reels_container.dart';
 import '/view/Widgets/NewsContainer.dart';
+import '/view/home.dart';
 
 class ShortsPage extends StatefulWidget {
   const ShortsPage({Key? key}) : super(key: key);
@@ -79,53 +82,82 @@ class _ShortsPageState extends State<ShortsPage> {
     }
   }
 
+  Future<void> _navigateBack() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lang = prefs.getString('preferred_language') ?? 'en';
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => HomeScreen(language: lang)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // Immersive experience without an AppBar.
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: futureFeed,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No content found.'));
-          } else {
-            final feedItems = snapshot.data!;
-            return GestureDetector(
-              // Wrap the PageView in a GestureDetector to handle swipe gestures.
-              onVerticalDragEnd: (details) =>
-                  _onVerticalDragEnd(details, feedItems.length),
-              child: PageView.builder(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                scrollDirection: Axis.vertical,
-                itemCount: feedItems.length,
-                itemBuilder: (context, index) {
-                  final item = feedItems[index];
-                  if (item['type'] == 'video') {
-                    final video = item['data'] as VideoModel;
-                    return ReelsContainer(video: video);
-                  } else if (item['type'] == 'news') {
-                    final news = item['data'] as NewsModel;
-                    return NewsContainer(
-                      imgUrl: news.image,
-                      imgDesc: news.head,
-                      newsHead: news.head,
-                      newsDesc: news.desc,
-                      newsUrl: news.newsUrl,
-                      isBookmarked: false,
-                      onBookmarkToggle: () {},
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
+    return WillPopScope(
+      // This callback intercepts system back gestures.
+      onWillPop: () async {
+        await _navigateBack();
+        return false;
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            FutureBuilder<List<Map<String, dynamic>>>(
+              future: futureFeed,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text('No content found.'));
+                } else {
+                  final feedItems = snapshot.data!;
+                  return GestureDetector(
+                    // Wrap the PageView in a GestureDetector to handle swipe gestures.
+                    onVerticalDragEnd: (details) =>
+                        _onVerticalDragEnd(details, feedItems.length),
+                    child: PageView.builder(
+                      controller: _pageController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      scrollDirection: Axis.vertical,
+                      itemCount: feedItems.length,
+                      itemBuilder: (context, index) {
+                        final item = feedItems[index];
+                        if (item['type'] == 'video') {
+                          final video = item['data'] as VideoModel;
+                          return ReelsContainer(video: video);
+                        } else if (item['type'] == 'news') {
+                          final news = item['data'] as NewsModel;
+                          return NewsContainer(
+                            imgUrl: news.image,
+                            imgDesc: news.head,
+                            newsHead: news.head,
+                            newsDesc: news.desc,
+                            newsUrl: news.newsUrl,
+                            isBookmarked: false,
+                            onBookmarkToggle: () {},
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  );
+                }
+              },
+            ),
+            // iOS-style back button at the top left.
+            Positioned(
+              top: 40,
+              left: 16,
+              child: IconButton(
+                icon:
+                const Icon(CupertinoIcons.back, color: Colors.white, size: 28),
+                onPressed: _navigateBack,
               ),
-            );
-          }
-        },
+            ),
+          ],
+        ),
       ),
     );
   }

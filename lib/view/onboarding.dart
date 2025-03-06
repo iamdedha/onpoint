@@ -13,7 +13,10 @@ class OnboardingPage extends StatefulWidget {
 class _OnboardingPageState extends State<OnboardingPage> {
   Future<void> _selectLanguage(String languageCode) async {
     final prefs = await SharedPreferences.getInstance();
+    // Save the selected language
     await prefs.setString('preferred_language', languageCode);
+    // Mark onboarding as completed
+    await prefs.setBool('onboarding_completed', true);
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => HomeScreen(language: languageCode)),
@@ -202,12 +205,10 @@ class _LanguageSelectorState extends State<LanguageSelector> {
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: () {
-                        if (selectedLanguage != 'en') {
-                          setState(() {
-                            selectedLanguage = 'en';
-                          });
-                          widget.onLanguageSelected('en');
-                        }
+                        setState(() {
+                          selectedLanguage = 'en';
+                        });
+                        widget.onLanguageSelected('en');
                       },
                       child: Container(
                         alignment: Alignment.center,
@@ -226,12 +227,10 @@ class _LanguageSelectorState extends State<LanguageSelector> {
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: () {
-                        if (selectedLanguage != 'hi') {
-                          setState(() {
-                            selectedLanguage = 'hi';
-                          });
-                          widget.onLanguageSelected('hi');
-                        }
+                        setState(() {
+                          selectedLanguage = 'hi';
+                        });
+                        widget.onLanguageSelected('hi');
                       },
                       child: Container(
                         alignment: Alignment.center,

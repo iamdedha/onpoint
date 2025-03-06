@@ -1,4 +1,3 @@
-// home.dart
 import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -10,7 +9,7 @@ import 'Widgets/news_webview.dart';
 import '/shorts_page.dart'; // For reels mode
 import 'Widgets/read_mode.dart'; // For read mode
 import 'package:flutter/services.dart'; // For haptic feedback
-import '/view/Widgets/explore_page.dart'; // <--- ADDED THIS IMPORT
+import '/view/Widgets/explore_page.dart'; // For Explore page
 
 const String sampleReelVideoUrl =
     "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
@@ -41,7 +40,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> fetchNews() async {
     try {
-      final url = Uri.parse('http://192.168.0.196:5000/news');
+      // Use the selected language code from onboarding ('hi' or 'en')
+      final url = Uri.parse('https://sumitkumarps1829.pythonanywhere.com/news?language=${widget.language}');
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final List<dynamic> jsonData = json.decode(response.body);
@@ -211,8 +211,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
               ),
             )
                 : ListView.builder(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               itemCount: filteredBookmarks.length,
               itemBuilder: (context, index) {
                 final news = filteredBookmarks[index];
@@ -230,18 +229,14 @@ class _BookmarksPageState extends State<BookmarksPage> {
                         Navigator.push(
                           context,
                           PageRouteBuilder(
-                            transitionDuration:
-                            const Duration(milliseconds: 300),
-                            pageBuilder: (context, animation,
-                                secondaryAnimation) =>
+                            transitionDuration: const Duration(milliseconds: 300),
+                            pageBuilder: (context, animation, secondaryAnimation) =>
                                 NewsWebView(url: news.newsUrl),
-                            transitionsBuilder: (context, animation,
-                                secondaryAnimation, child) {
+                            transitionsBuilder: (context, animation, secondaryAnimation, child) {
                               const begin = Offset(1.0, 0.0);
                               const end = Offset.zero;
                               final tween = Tween(begin: begin, end: end)
-                                  .chain(CurveTween(
-                                  curve: Curves.easeInOut));
+                                  .chain(CurveTween(curve: Curves.easeInOut));
                               return SlideTransition(
                                 position: animation.drive(tween),
                                 child: child,
@@ -281,8 +276,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.bookmark,
-                                  color: Colors.blue),
+                              icon: const Icon(Icons.bookmark, color: Colors.blue),
                               onPressed: () {
                                 widget.onBookmarkToggle(news);
                               },
@@ -434,8 +428,8 @@ class NewsStack extends StatefulWidget {
 class _NewsStackState extends State<NewsStack>
     with SingleTickerProviderStateMixin {
   double _dragOffset = 0.0;
-  final double swipeUpThreshold = -100.0;
-  final double swipeDownThreshold = 100.0;
+  final double swipeUpThreshold = -30.0;
+  final double swipeDownThreshold = 30.0;
   final List<NewsModel> _removedNews = [];
 
   late AnimationController _animationController;
@@ -445,8 +439,7 @@ class _NewsStackState extends State<NewsStack>
   void initState() {
     super.initState();
     // Animation duration set to 400ms for smoother transitions.
-    _animationController =
-        AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
   }
 
   void _animateBack() {
@@ -460,7 +453,7 @@ class _NewsStackState extends State<NewsStack>
     _animationController.forward(from: 0);
   }
 
-  // Leaving bounce effect logic in place as requested
+  // Leaving bounce effect logic in place as requested.
   void _animateOffScreen(double targetOffset, VoidCallback onAnimationComplete) {
     _animation = Tween<double>(begin: _dragOffset, end: targetOffset).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
@@ -501,6 +494,7 @@ class _NewsStackState extends State<NewsStack>
               newsDesc: backgroundNews.desc,
               newsUrl: backgroundNews.newsUrl,
               isBookmarked: widget.bookmarkedNews.contains(backgroundNews!),
+              // Use the bang operator to ensure backgroundNews is non-null.
               onBookmarkToggle: () => widget.onBookmarkToggle(backgroundNews!),
               onReadMode: () => widget.onReadMode(1),
               onExploreTap: () {
@@ -562,10 +556,8 @@ class _NewsStackState extends State<NewsStack>
                 newsHead: widget.newsList[0].head,
                 newsDesc: widget.newsList[0].desc,
                 newsUrl: widget.newsList[0].newsUrl,
-                isBookmarked:
-                widget.bookmarkedNews.contains(widget.newsList[0]),
-                onBookmarkToggle: () =>
-                    widget.onBookmarkToggle(widget.newsList[0]),
+                isBookmarked: widget.bookmarkedNews.contains(widget.newsList[0]),
+                onBookmarkToggle: () => widget.onBookmarkToggle(widget.newsList[0]),
                 onReadMode: () => widget.onReadMode(0),
                 onExploreTap: () {
                   final fullNewsList = [..._removedNews, ...widget.newsList];
