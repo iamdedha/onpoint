@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart'; // For Cupertino icons
 import 'package:http/http.dart' as http;
@@ -16,7 +15,9 @@ const String sampleReelVideoUrl =
 
 class HomeScreen extends StatefulWidget {
   final String language;
-  const HomeScreen({Key? key, this.language = 'en'}) : super(key: key);
+  final String? selectedNewsUrl; // Optional parameter for jump-to-article.
+  const HomeScreen({Key? key, this.language = 'en', this.selectedNewsUrl})
+      : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -35,19 +36,41 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    fetchNews();
+    fetchNews().then((_) {
+      if (widget.selectedNewsUrl != null) {
+        final trimmedSelected = widget.selectedNewsUrl!.trim().toLowerCase();
+        // Log fetched news URLs for debugging.
+        for (var news in newsList) {
+          print("Fetched article URL: ${news.newsUrl.trim().toLowerCase()}");
+        }
+        final index = newsList.indexWhere(
+                (news) => news.newsUrl.trim().toLowerCase() == trimmedSelected);
+        if (index != -1) {
+          Future.delayed(const Duration(milliseconds: 500), () {
+            _verticalController.jumpToPage(index);
+            print("Jumped to article at index: $index");
+          });
+        } else {
+          print("Selected article not found. Expected: $trimmedSelected");
+        }
+      }
+    });
   }
 
   Future<void> fetchNews() async {
     try {
-      // Use the selected language code from onboarding ('hi' or 'en')
-      final url = Uri.parse('https://sumitkumarps1829.pythonanywhere.com/news?language=${widget.language}');
+      // Use the selected language code ('hi' or 'en').
+      final url = Uri.parse(
+          'https://sumitkumarps1829.pythonanywhere.com/news?language=${widget.language}');
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final List<dynamic> jsonData = json.decode(response.body);
         setState(() {
           newsList = jsonData.map((item) => NewsModel.fromJson(item)).toList();
-          newsList.shuffle();
+          // Only shuffle if no specific article is requested.
+          if (widget.selectedNewsUrl == null) {
+            newsList.shuffle();
+          }
         });
       } else {
         print("Failed to fetch news. Status code: ${response.statusCode}");
@@ -178,7 +201,8 @@ class _BookmarksPageState extends State<BookmarksPage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: TextField(
               controller: _searchController,
               onChanged: (value) {
@@ -188,10 +212,12 @@ class _BookmarksPageState extends State<BookmarksPage> {
               },
               decoration: InputDecoration(
                 hintText: 'Search',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                prefixIcon:
+                const Icon(Icons.search, color: Colors.grey),
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                contentPadding:
+                const EdgeInsets.symmetric(vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -211,7 +237,8 @@ class _BookmarksPageState extends State<BookmarksPage> {
               ),
             )
                 : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 8),
               itemCount: filteredBookmarks.length,
               itemBuilder: (context, index) {
                 final news = filteredBookmarks[index];
@@ -229,14 +256,20 @@ class _BookmarksPageState extends State<BookmarksPage> {
                         Navigator.push(
                           context,
                           PageRouteBuilder(
-                            transitionDuration: const Duration(milliseconds: 300),
-                            pageBuilder: (context, animation, secondaryAnimation) =>
+                            transitionDuration:
+                            const Duration(milliseconds: 300),
+                            pageBuilder: (context, animation,
+                                secondaryAnimation) =>
                                 NewsWebView(url: news.newsUrl),
-                            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                            transitionsBuilder: (context, animation,
+                                secondaryAnimation, child) {
                               const begin = Offset(1.0, 0.0);
                               const end = Offset.zero;
-                              final tween = Tween(begin: begin, end: end)
-                                  .chain(CurveTween(curve: Curves.easeInOut));
+                              final tween = Tween(
+                                  begin: begin,
+                                  end: end)
+                                  .chain(CurveTween(
+                                  curve: Curves.easeInOut));
                               return SlideTransition(
                                 position: animation.drive(tween),
                                 child: child,
@@ -276,7 +309,8 @@ class _BookmarksPageState extends State<BookmarksPage> {
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.bookmark, color: Colors.blue),
+                              icon: const Icon(Icons.bookmark,
+                                  color: Colors.blue),
                               onPressed: () {
                                 widget.onBookmarkToggle(news);
                               },
@@ -438,8 +472,8 @@ class _NewsStackState extends State<NewsStack>
   @override
   void initState() {
     super.initState();
-    // Animation duration set to 400ms for smoother transitions.
-    _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _animationController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 400));
   }
 
   void _animateBack() {
@@ -453,8 +487,8 @@ class _NewsStackState extends State<NewsStack>
     _animationController.forward(from: 0);
   }
 
-  // Leaving bounce effect logic in place as requested.
-  void _animateOffScreen(double targetOffset, VoidCallback onAnimationComplete) {
+  void _animateOffScreen(
+      double targetOffset, VoidCallback onAnimationComplete) {
     _animation = Tween<double>(begin: _dragOffset, end: targetOffset).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     )..addListener(() {
@@ -475,7 +509,6 @@ class _NewsStackState extends State<NewsStack>
 
   @override
   Widget build(BuildContext context) {
-    // Decide which background news to show.
     NewsModel? backgroundNews;
     if (_dragOffset > 0 && _removedNews.isNotEmpty) {
       backgroundNews = _removedNews.last;
@@ -493,8 +526,7 @@ class _NewsStackState extends State<NewsStack>
               newsHead: backgroundNews.head,
               newsDesc: backgroundNews.desc,
               newsUrl: backgroundNews.newsUrl,
-              isBookmarked: widget.bookmarkedNews.contains(backgroundNews!),
-              // Use the bang operator to ensure backgroundNews is non-null.
+              isBookmarked: widget.bookmarkedNews.contains(backgroundNews),
               onBookmarkToggle: () => widget.onBookmarkToggle(backgroundNews!),
               onReadMode: () => widget.onReadMode(1),
               onExploreTap: () {
@@ -502,7 +534,8 @@ class _NewsStackState extends State<NewsStack>
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ExplorePage(newsList: fullNewsList),
+                    builder: (context) =>
+                        ExplorePage(newsList: fullNewsList),
                   ),
                 );
               },
@@ -511,7 +544,6 @@ class _NewsStackState extends State<NewsStack>
         if (widget.newsList.isNotEmpty)
           GestureDetector(
             onPanUpdate: (details) {
-              // Check that vertical displacement dominates.
               if (details.delta.dy.abs() > details.delta.dx.abs()) {
                 setState(() {
                   _dragOffset += details.delta.dy;
@@ -526,7 +558,6 @@ class _NewsStackState extends State<NewsStack>
                     _removedNews.add(widget.newsList[0]);
                     widget.newsList.removeAt(0);
                     _dragOffset = 0.0;
-                    // When all news have been swiped, wrap-around by repopulating the list.
                     if (widget.newsList.isEmpty) {
                       widget.newsList.addAll(_removedNews);
                       _removedNews.clear();
@@ -557,14 +588,16 @@ class _NewsStackState extends State<NewsStack>
                 newsDesc: widget.newsList[0].desc,
                 newsUrl: widget.newsList[0].newsUrl,
                 isBookmarked: widget.bookmarkedNews.contains(widget.newsList[0]),
-                onBookmarkToggle: () => widget.onBookmarkToggle(widget.newsList[0]),
+                onBookmarkToggle: () =>
+                    widget.onBookmarkToggle(widget.newsList[0]),
                 onReadMode: () => widget.onReadMode(0),
                 onExploreTap: () {
                   final fullNewsList = [..._removedNews, ...widget.newsList];
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ExplorePage(newsList: fullNewsList),
+                      builder: (context) =>
+                          ExplorePage(newsList: fullNewsList),
                     ),
                   );
                 },

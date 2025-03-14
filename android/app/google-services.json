@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "419435283567",
+    "project_id": "onpoint-notifications",
+    "storage_bucket": "onpoint-notifications.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:419435283567:android:a704f3b8d1e4d0a1c7b99a",
+        "android_client_info": {
+          "package_name": "com.example.onpoint"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC7Ro4aemwabPCwsaZNhHumhUTkF_gjg64"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
